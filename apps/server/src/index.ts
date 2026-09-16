@@ -17,7 +17,13 @@ const port = Number(process.env.PORT ?? 4000);
 const uploadDir = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
 
 fs.mkdirSync(uploadDir, { recursive: true });
-app.use(cors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000" }));
+//app.use(cors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000" }));
+app.use(
+  cors({
+    origin: process.env.WEB_ORIGIN || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
