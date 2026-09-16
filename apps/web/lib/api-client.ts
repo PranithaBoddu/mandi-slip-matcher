@@ -5,14 +5,21 @@ import type { WeighbridgeSlip } from "@shared/types/weighbridge.types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
-async function authHeaders(): Promise<HeadersInit> {
-  let token = typeof window !== "undefined" ? localStorage.getItem("mandi_session_token") : null;
+async function getAuthToken(forceRefresh = false): Promise<string | null> {
+  let token = typeof window !== "undefined" && !forceRefresh
+    ? localStorage.getItem("mandi_session_token")
+    : null;
   if (!token && typeof window !== "undefined") {
     const response = await fetch(`${BASE_URL}/dev-token`, { method: "POST" });
     const body = await response.json() as { token: string };
     token = body.token;
     localStorage.setItem("mandi_session_token", token);
   }
+  return token;
+}
+
+async function authHeaders(forceRefresh = false): Promise<HeadersInit> {
+  const token = await getAuthToken(forceRefresh);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -24,10 +31,21 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = await authHeaders();
-  return handleResponse<T>(await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: { ...headers, ...init.headers },
-  }));
+  });
+
+  if (response.status === 401 && typeof window !== "undefined") {
+    localStorage.removeItem("mandi_session_token");
+    const refreshedHeaders = await authHeaders(true);
+    return handleResponse<T>(await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      headers: { ...refreshedHeaders, ...init.headers },
+    }));
+  }
+
+  return handleResponse<T>(response);
 }
 
 export const apiClient = {
