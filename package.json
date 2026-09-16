@@ -1,0 +1,13 @@
+{
+  "name": "oaks-claude",
+  "private": true,
+  "workspaces": ["apps/server", "apps/web", "packages/shared"],
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev --workspace @oaks/server\" \"npm run dev --workspace @oaks/web\"",
+    "build": "npm run build --workspace @oaks/shared && npm run build --workspace @oaks/server && npm run build --workspace @oaks/web",
+    "typecheck": "npm run typecheck --workspace @oaks/server && npm run typecheck --workspace @oaks/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

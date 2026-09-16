@@ -1,0 +1,8 @@
+node_modules/
+.next/
+dist/
+uploads/
+data/
+*.tsbuildinfo
+apps/server/.env
+apps/web/.env.local

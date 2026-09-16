@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": { "@shared/*": ["../../packages/shared/src/*"] }
+  },
+  "include": ["src/**/*.ts", "../../packages/shared/src/**/*.ts"]
+}
