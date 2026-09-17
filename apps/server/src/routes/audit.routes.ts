@@ -56,17 +56,25 @@ router.get("/:auditId", (req, res) => {
   const log = auditStore.getById(req.params.auditId);
   if (!log) return res.status(404).json({ error: { message: "Audit log not found" } });
 
-  const session = sessionStore.get(log.snapshot.sessionId);
+  let session;
+  try {
+    session = sessionStore.get(log.snapshot.sessionId);
+  } catch {
+    session = undefined;
+  }
   res.json({
     receipt: {
       auditLogId: log.id,
       tokenId: log.tokenId,
-      farmerName: session.gatePass?.fields.farmerName.value ?? "",
-      vehicleRegNumber: session.gatePass?.fields.vehicleRegNumber.value ?? "",
-      netWeightKg: session.weighbridgeSlip?.fields.netWeightKg.value ?? 0,
+      farmerName: session?.gatePass?.fields.farmerName.value ?? "",
+      vehicleRegNumber: session?.gatePass?.fields.vehicleRegNumber.value ?? "",
+      netWeightKg: session?.weighbridgeSlip?.fields.netWeightKg.value ?? null,
       decision: log.decision,
       decidedAt: log.decidedAt,
       agentName: log.decidedBy.agentName,
+      decisionReason: log.rejectReason
+        ? `${log.rejectReason.code.replace(/_/g, " ")}${log.rejectReason.note ? `: ${log.rejectReason.note}` : ""}`
+        : log.flagNote,
       discrepancySummary: log.snapshot.comparisons
         .filter(comparison => comparison.status !== "match")
         .map(comparison => `${comparison.label}: ${comparison.status}`),

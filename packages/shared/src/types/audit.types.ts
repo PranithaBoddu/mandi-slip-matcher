@@ -40,10 +40,11 @@ export interface AuditReceipt {
   tokenId: string;
   farmerName: string;
   vehicleRegNumber: string;
-  netWeightKg: number;
+  netWeightKg: number | null;
   decision: PayoutDecision;
   decidedAt: string;
   agentName: string;
+  decisionReason?: string;
   discrepancySummary: string[];     // human-readable bullet list
   documentThumbnails: {
     gatePassUrl: string;

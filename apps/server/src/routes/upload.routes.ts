@@ -5,6 +5,7 @@ import { GatePassParser } from "../services/ocr/GatePassParser";
 import { WeighbridgeParser } from "../services/ocr/WeighbridgeParser";
 import { MockDocumentParser } from "../services/ocr/MockDocumentParser";
 import { ClaudeVisionDocumentParser } from "../services/ocr/ClaudeVisionDocumentParser";
+import { TesseractDocumentParser } from "../services/ocr/TesseractDocumentParser";
 import { DocumentAsset } from "@shared/types/common.types";
 import { sessionStore } from "../services/store/InMemorySessionStore";
 
@@ -12,10 +13,23 @@ const router = Router();
 
 const parserImpl = process.env.USE_MOCK_OCR === "true"
   ? new MockDocumentParser()
+  : process.env.OCR_PROVIDER === "tesseract"
+  ? new TesseractDocumentParser()
   : new ClaudeVisionDocumentParser();
 
 const gatePassParser = new GatePassParser(parserImpl);
 const weighbridgeParser = new WeighbridgeParser(parserImpl);
+
+function ensureCaseToken<T extends { fields: { tokenId: { value: string; confidence: number; source: "ocr" | "manual_override" | "system_default"; rawText: string } } }>(document: T, sessionId: string): T {
+  if (document.fields.tokenId.value.trim()) return document;
+  document.fields.tokenId = {
+    value: `CASE-${sessionId.slice(0, 8).toUpperCase()}`,
+    rawText: "",
+    confidence: 0,
+    source: "system_default",
+  };
+  return document;
+}
 
 function toDocumentAsset(file: Express.Multer.File, captureMode: "camera" | "file_upload" | "scan"): DocumentAsset {
   return {
@@ -36,7 +50,7 @@ router.post("/gate-pass", uploadMiddleware.single("file"), async (req, res, next
     if (!req.file) return res.status(400).json({ error: { message: "No file provided" } });
     const captureMode = (req.body.captureMode ?? "file_upload") as any;
     const asset = toDocumentAsset(req.file, captureMode);
-    const gatePass = await gatePassParser.parse(asset);
+    const gatePass = ensureCaseToken(await gatePassParser.parse(asset), req.body.sessionId);
     sessionStore.attachGatePass(req.body.sessionId, gatePass);
     res.status(201).json({ gatePass });
   } catch (err) {
@@ -50,7 +64,7 @@ router.post("/weighbridge-slip", uploadMiddleware.single("file"), async (req, re
     if (!req.file) return res.status(400).json({ error: { message: "No file provided" } });
     const captureMode = (req.body.captureMode ?? "file_upload") as any;
     const asset = toDocumentAsset(req.file, captureMode);
-    const weighbridgeSlip = await weighbridgeParser.parse(asset);
+    const weighbridgeSlip = ensureCaseToken(await weighbridgeParser.parse(asset), req.body.sessionId);
     sessionStore.attachWeighbridgeSlip(req.body.sessionId, weighbridgeSlip);
     res.status(201).json({ weighbridgeSlip });
   } catch (err) {

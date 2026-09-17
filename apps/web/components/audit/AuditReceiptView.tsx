@@ -56,7 +56,9 @@ export function AuditReceiptView({ receipt, onDownloadJson }: AuditReceiptViewPr
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-400">Net Weight</dt>
-            <dd className="font-medium text-gray-900">{receipt.netWeightKg.toLocaleString()} kg</dd>
+            <dd className="font-medium text-gray-900">
+              {receipt.netWeightKg == null ? "—" : `${receipt.netWeightKg.toLocaleString()} kg`}
+            </dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-400">Farmer Name</dt>
@@ -85,6 +87,11 @@ export function AuditReceiptView({ receipt, onDownloadJson }: AuditReceiptViewPr
                 </li>
               ))}
             </ul>
+          )}
+          {receipt.decisionReason && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              Rejection reason: {receipt.decisionReason}
+            </p>
           )}
         </div>
 
