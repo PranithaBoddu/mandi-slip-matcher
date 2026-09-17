@@ -108,8 +108,8 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private cleanToken(value: string): string {
-    const m = value.match(/TKN-\d{4}-\d+/i);
-    return m?.[0].toUpperCase() ?? "";
+    const m = value.match(/TKN-\\d{4}-\\d+/i);
+    return m?.[0] ?? "";
   }
   private findDate(text: string): string {
   const m = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
@@ -117,8 +117,8 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findVehicle(text: string): string {
-    const m = text.match(/\bTS\d{2}[A-Z]{1,2}\d{4}\b/i);
-    return m?.[0].toUpperCase() ?? "";
+    const m = text.match(/TS\d{2}[A-Z]{2}\d{4}/i);
+    return m?.[0]?.toUpperCase() ?? "";
   }
 
   private findFarmerId(text: string): string {
@@ -132,7 +132,7 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findCommodity(text: string): string {
-    const m = text.match(/Commodity(?:\s*Type)?\s*[:\-]?\s*([A-Za-z]+)/i);
+    const m = text.match(/Commodity(?:\s*Type)?\s*:\s*([A-Za-z]+)/i);
     return m?.[1]?.trim() ?? "";
   }
 
@@ -147,9 +147,9 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findWeight(text: string, type: "gross" | "tare" | "net"): string {
-    const regex = new RegExp(`${type}\\s*Weight\\s*[:\\-]?\\s*([\\d,]+)`, "i");
+    const regex = new RegExp(`${type}\\s*Weight\\s*:\\s*([\\d,]+)`, "i");
     const m = text.match(regex);
-    return m?.[1]?.replace(/,/g, "") ?? "";
+    return m ? m[1].replace(/,/g, "") : "";
   }
 
   private findOperatorId(text: string): string {
