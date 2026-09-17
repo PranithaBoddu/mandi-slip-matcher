@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { DocumentAsset, ExtractedField } from "@shared/types/common.types";
 import { WeighbridgeSlip, WeighbridgeFields } from "@shared/types/weighbridge.types";
 import { DocumentParser, RawExtractionResult } from "./DocumentParser";
@@ -31,7 +32,7 @@ export class WeighbridgeParser {
     };
 
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       document: { ...document, imageQualityFlags: raw.qualityFlags as any },
       status: raw.extractionSucceeded ? "extracted" : "extraction_failed",
       fields,

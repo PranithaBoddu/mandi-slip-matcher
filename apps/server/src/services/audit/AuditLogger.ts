@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { AuditLog, PayoutDecision, RejectReason } from "@shared/types/audit.types";
 import { ReconciliationResult } from "@shared/types/reconciliation.types";
 import { auditStore } from "../store/InMemoryAuditStore";
@@ -32,7 +33,7 @@ export class AuditLogger {
     }
 
     const log: AuditLog = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       reconciliationResultId: input.reconciliation.id,
       gatePassId: input.gatePassId,
       weighbridgeSlipId: input.weighbridgeSlipId,

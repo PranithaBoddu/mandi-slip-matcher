@@ -1,5 +1,6 @@
 import { Router } from "express";
 import fs from "fs/promises";
+import { randomUUID } from "node:crypto";
 import { uploadMiddleware } from "../middleware/fileUpload";
 import { GatePassParser } from "../services/ocr/GatePassParser";
 import { WeighbridgeParser } from "../services/ocr/WeighbridgeParser";
@@ -31,14 +32,17 @@ function ensureCaseToken<T extends { fields: { tokenId: { value: string; confide
   return document;
 }
 
-function toDocumentAsset(file: Express.Multer.File, captureMode: "camera" | "file_upload" | "scan"): DocumentAsset {
+function toDocumentAsset(
+  file: Express.Multer.File,
+  captureMode: "camera" | "file_upload" | "scan"
+): DocumentAsset {
   return {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     originalFilename: file.originalname,
     mimeType: file.mimetype as DocumentAsset["mimeType"],
     storageUrl: file.path,
     uploadedAt: new Date().toISOString(),
-    pageCount: file.mimetype === "application/pdf" ? 1 : 1, // refined post-parse for multi-page PDFs
+    pageCount: 1,
     captureMode,
     imageQualityFlags: [],
   };

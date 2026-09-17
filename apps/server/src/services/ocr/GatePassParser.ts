@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { DocumentAsset, ExtractedField } from "@shared/types/common.types";
 import { GatePass, GatePassFields } from "@shared/types/gate-pass.types";
 import { DocumentParser, RawExtractionResult } from "./DocumentParser";
@@ -30,7 +31,7 @@ export class GatePassParser {
     };
 
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       document: { ...document, imageQualityFlags: raw.qualityFlags as any },
       status: raw.extractionSucceeded ? "extracted" : "extraction_failed",
       fields,

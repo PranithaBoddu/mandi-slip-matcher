@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { GatePass } from "@shared/types/gate-pass.types";
 import { WeighbridgeSlip } from "@shared/types/weighbridge.types";
 
@@ -12,10 +13,14 @@ export class SessionStore {
   private sessions = new Map<string, ReviewSession>();
 
   create(): ReviewSession {
-    const session: ReviewSession = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-    this.sessions.set(session.id, session);
-    return session;
-  }
+  const session: ReviewSession = {
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+
+  this.sessions.set(session.id, session);
+  return session;
+}
 
   attachGatePass(sessionId: string, gatePass: GatePass) {
     const s = this.require(sessionId);

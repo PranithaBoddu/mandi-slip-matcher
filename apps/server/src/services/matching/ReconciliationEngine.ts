@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { GatePass } from "@shared/types/gate-pass.types";
 import { WeighbridgeSlip } from "@shared/types/weighbridge.types";
 import {
@@ -80,7 +81,7 @@ export class ReconciliationEngine {
     const verdict = this.deriveVerdict(comparisons, duplicateCheck.isDuplicate, gatePass, weighbridgeSlip);
 
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       sessionId,
       gatePassId: gatePass.id,
       weighbridgeSlipId: weighbridgeSlip.id,

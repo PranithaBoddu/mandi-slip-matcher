@@ -1,6 +1,6 @@
 import multer from "multer";
 import path from "path";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_FILE_SIZE_MB = 15;
@@ -18,7 +18,11 @@ export const uploadMiddleware = multer({
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_MIME.includes(file.mimetype)) {
-      return cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: JPEG, PNG, WEBP, PDF.`));
+      return cb(
+        new Error(
+          `Unsupported file type: ${file.mimetype}. Allowed: JPEG, PNG, WEBP, PDF.`
+        )
+      );
     }
     cb(null, true);
   },
