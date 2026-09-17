@@ -62,32 +62,30 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private parseGatePass(text: string): Record<string, RawExtractionField> {
-    const tokenId = this.findTokenId(text) || this.findValue(text, FIELD_LABELS.tokenId);
     return {
-      tokenId: this.field(tokenId),
-      gatePassDate: this.field(this.findValue(text, FIELD_LABELS.gatePassDate)),
-      vehicleRegNumber: this.field(this.findValue(text, FIELD_LABELS.vehicleRegNumber)),
-      farmerId: this.field(this.findValue(text, FIELD_LABELS.farmerId)),
-      farmerName: this.field(this.findValue(text, FIELD_LABELS.farmerName)),
-      commodityType: this.field(this.findValue(text, FIELD_LABELS.commodityType)),
-      mandiYardCode: this.field(this.findValue(text, FIELD_LABELS.mandiYardCode)),
-      entryTime: this.field(this.findValue(text, FIELD_LABELS.entryTime)),
-      declaredBags: this.field(this.findValue(text, FIELD_LABELS.declaredBags)),
+      tokenId: this.field(this.findTokenId(text)),
+      gatePassDate: this.field(this.findDate(text)),
+      vehicleRegNumber: this.field(this.findVehicle(text)),
+      farmerId: this.field(this.findFarmerId(text)),
+      farmerName: this.field(this.findFarmerName(text)),
+      commodityType: this.field(this.findCommodity(text)),
+      mandiYardCode: this.field(this.findMandiCode(text)),
+      entryTime: this.field(this.findTime(text, "entry")),
+      declaredBags: this.field(this.findBags(text)),
     };
   }
 
   private parseWeighbridge(text: string): Record<string, RawExtractionField> {
-    const tokenId = this.findTokenId(text) || this.findValue(text, FIELD_LABELS.tokenId);
     return {
-      tokenId: this.field(tokenId),
-      weighDate: this.field(this.findValue(text, FIELD_LABELS.weighDate)),
-      vehicleRegNumber: this.field(this.findValue(text, FIELD_LABELS.vehicleRegNumber)),
-      grossWeightKg: this.field(this.findValue(text, FIELD_LABELS.grossWeightKg)),
-      tareWeightKg: this.field(this.findValue(text, FIELD_LABELS.tareWeightKg)),
-      netWeightKg: this.field(this.findValue(text, FIELD_LABELS.netWeightKg)),
-      commodityType: this.field(this.findValue(text, FIELD_LABELS.commodityType)),
-      weighbridgeOperatorId: this.field(this.findValue(text, FIELD_LABELS.weighbridgeOperatorId)),
-      weighTime: this.field(this.findValue(text, FIELD_LABELS.weighTime)),
+      tokenId: this.field(this.findTokenId(text)),
+      weighDate: this.field(this.findDate(text)),
+      vehicleRegNumber: this.field(this.findVehicle(text)),
+      grossWeightKg: this.field(this.findWeight(text, "gross")),
+      tareWeightKg: this.field(this.findWeight(text, "tare")),
+      netWeightKg: this.field(this.findWeight(text, "net")),
+      commodityType: this.field(this.findCommodity(text)),
+      weighbridgeOperatorId: this.field(this.findOperatorId(text)),
+      weighTime: this.field(this.findTime(text, "weigh")),
     };
   }
 
@@ -110,12 +108,63 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private cleanToken(value: string): string {
-    return value
-      .replace(/[|,;:.]+$/, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    const m = value.match(/TKN-\d{4}-\d+/i);
+    return m?.[0].toUpperCase() ?? "";
+  }
+  private findDate(text: string): string {
+  const m = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
+  return m?.[0] ?? "";
   }
 
+  private findVehicle(text: string): string {
+    const m = text.match(/\bTS\d{2}[A-Z]{1,2}\d{4}\b/i);
+    return m?.[0].toUpperCase() ?? "";
+  }
+
+  private findFarmerId(text: string): string {
+    const m = text.match(/\bFRM-\d+\b/i);
+    return m?.[0].toUpperCase() ?? "";
+  }
+
+  private findFarmerName(text: string): string {
+    const m = text.match(/Farmer\s*Name\s*[:\-]?\s*([A-Za-z ]+)/i);
+    return m?.[1]?.trim() ?? "";
+  }
+
+  private findCommodity(text: string): string {
+    const m = text.match(/Commodity(?:\s*Type)?\s*[:\-]?\s*([A-Za-z]+)/i);
+    return m?.[1]?.trim() ?? "";
+  }
+
+  private findMandiCode(text: string): string {
+    const m = text.match(/\bMDY-[A-Z]{3}-\d+\b/i);
+    return m?.[0].toUpperCase() ?? "";
+  }
+
+  private findBags(text: string): string {
+    const m = text.match(/Declared\s*Bags\s*[:\-]?\s*(\d+)/i);
+    return m?.[1] ?? "";
+  }
+
+  private findWeight(text: string, type: "gross" | "tare" | "net"): string {
+    const regex = new RegExp(`${type}\\s*Weight\\s*[:\\-]?\\s*([\\d,]+)`, "i");
+    const m = text.match(regex);
+    return m?.[1]?.replace(/,/g, "") ?? "";
+  }
+
+  private findOperatorId(text: string): string {
+    const m = text.match(/Operator\s*ID\s*[:\-]?\s*([A-Z0-9-]+)/i);
+    return m?.[1] ?? "";
+  }
+
+  private findTime(text: string, mode: "entry" | "weigh"): string {
+    const regex =
+      mode === "entry"
+        ? /Entry\s*Time\s*[:\-]?\s*(\d{2}:\d{2})/i
+        : /Weigh\s*Time\s*[:\-]?\s*(\d{2}:\d{2})/i;
+
+    return text.match(regex)?.[1] ?? "";
+  }
   private detectQualityFlags(text: string): string[] {
     const flags: string[] = [];
     if (text.trim().length < 40) flags.push("partial_occlusion");
