@@ -42,8 +42,7 @@ export function normalizeVehicleReg(raw: string): string {
     .replace(/[\s\-]/g, "")
     .replace(/O/g, "0")
     .replace(/I/g, "1")
-    .replace(/S/g, "5")
-    .replace(/B/g, "8");
+    .replace(/S/g, "5");
 }
 
 export function fuzzyMatchVehicleReg(
@@ -51,12 +50,31 @@ export function fuzzyMatchVehicleReg(
   weighbridgeReg: string,
   minSimilarity: number
 ): { status: MatchStatus; score: number } {
+
   const a = normalizeVehicleReg(gatePassReg);
   const b = normalizeVehicleReg(weighbridgeReg);
-  const score = normalizedSimilarity(a, b);
 
-  if (score >= minSimilarity) return { status: "match", score };
-  if (score >= minSimilarity - 0.15) return { status: "warning", score };
+  // Exact match
+  if (a === b) {
+    return { status: "match", score: 1 };
+  }
+
+  // Count character differences
+  const len = Math.max(a.length, b.length);
+  let diff = 0;
+
+  for (let i = 0; i < len; i++) {
+    if (a[i] !== b[i]) diff++;
+  }
+
+  const score = (len - diff) / len;
+
+  // One-character difference → Manual Review
+  if (diff === 1) {
+    return { status: "warning", score };
+  }
+
+  // Multiple differences → Reject
   return { status: "mismatch", score };
 }
 
