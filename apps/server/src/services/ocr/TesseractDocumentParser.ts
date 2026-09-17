@@ -93,23 +93,35 @@ export class TesseractDocumentParser implements DocumentParser {
     return { value, confidence: value ? 0.75 : 0 };
   }
 
-  private findValue(text: string, labelPattern: string): string {
-    const match = text.match(new RegExp(`${labelPattern}\\s*[:#-]?\\s*([^\\n|]+)`, "im"));
-    return match?.[1]?.replace(/[|]/g, "").trim() ?? "";
+  private findValue(text: string, label: string): string {
+    const lines = text.split(/\r?\n/);
+
+    for (const line of lines) {
+      if (line.toLowerCase().includes(label.toLowerCase())) {
+        const parts = line.split(":");
+        if (parts.length > 1) {
+          return parts.slice(1).join(":").trim();
+        }
+      }
+    }
+
+    return "";
   }
 
   private findTokenId(text: string): string {
-    const labeled = text.match(/(?:token|tok)\s*(?:id|no\.?|number)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9\s./_-]{3,})/i);
-    const labeledValue = this.cleanToken(labeled?.[1] ?? "");
-    if (labeledValue) return labeledValue;
+    // First look for a labeled token number
+    const value = this.findValue(text, "Token No");
+    const cleaned = this.cleanToken(value);
+    if (cleaned) return cleaned;
 
-    const match = text.match(/\b(?:TKN|TK|TOKEN)?\s*\d{3,6}\s*(?:[-/\s]\s*\d{2,6}){1,3}\b/i);
-    return this.cleanToken(match?.[0] ?? "");
+    // Fallback: search anywhere in the OCR text
+    const match = text.match(/\bTKN-\d{4}-\d+\b/i);
+    return match?.[0].toUpperCase() ?? "";
   }
 
   private cleanToken(value: string): string {
-    const m = value.match(/TKN-\\d{4}-\\d+/i);
-    return m?.[0] ?? "";
+    const m = value.match(/TKN-\d{4}-\d+/i);
+    return m?.[0].toUpperCase() ?? "";
   }
   private findDate(text: string): string {
   const m = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
@@ -117,8 +129,11 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findVehicle(text: string): string {
-    const m = text.match(/TS\d{2}[A-Z]{2}\d{4}/i);
-    return m?.[0]?.toUpperCase() ?? "";
+    const value = this.findValue(text, "Vehicle Registration")
+              || this.findValue(text, "Vehicle Reg. No");
+
+    const m = value.match(/TS\d{2}[A-Z]{2}\d{4}/i);
+    return m?.[0].toUpperCase() ?? "";
   }
 
   private findFarmerId(text: string): string {
@@ -132,8 +147,8 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findCommodity(text: string): string {
-    const m = text.match(/Commodity(?:\s*Type)?\s*:\s*([A-Za-z]+)/i);
-    return m?.[1]?.trim() ?? "";
+    return this.findValue(text, "Commodity Type")
+        || this.findValue(text, "Commodity");
   }
 
   private findMandiCode(text: string): string {
@@ -147,9 +162,15 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findWeight(text: string, type: "gross" | "tare" | "net"): string {
-    const regex = new RegExp(`${type}\\s*Weight\\s*:\\s*([\\d,]+)`, "i");
-    const m = text.match(regex);
-    return m ? m[1].replace(/,/g, "") : "";
+    const label =
+      type === "gross"
+        ? "Gross Weight"
+        : type === "tare"
+        ? "Tare Weight"
+        : "Net Weight";
+
+    const value = this.findValue(text, label);
+    return value.replace(/[^\d]/g, "");
   }
 
   private findOperatorId(text: string): string {
