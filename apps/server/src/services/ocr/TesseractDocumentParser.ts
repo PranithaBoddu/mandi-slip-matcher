@@ -39,6 +39,7 @@ export class TesseractDocumentParser implements DocumentParser {
       worker = await createWorker("eng");
       const result = await worker.recognize(await fs.readFile(document.storageUrl));
       const text = result.data.text;
+      console.log("OCR TEXT:\n", text);
       const fields = documentType === "gate_pass"
         ? this.parseGatePass(text)
         : this.parseWeighbridge(text);
@@ -129,10 +130,10 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findVehicle(text: string): string {
-    const value = this.findValue(text, "Vehicle Registration")
-              || this.findValue(text, "Vehicle Reg. No");
+    // OCR commonly reads 0 as @ or O
+    const cleaned = text.replace(/@/g, "0").replace(/O/g, "0");
 
-    const m = value.match(/TS\d{2}[A-Z]{2}\d{4}/i);
+    const m = cleaned.match(/TS\d{2}[A-Z]{2}\d{4}/i);
     return m?.[0].toUpperCase() ?? "";
   }
 
@@ -147,8 +148,10 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findCommodity(text: string): string {
-    return this.findValue(text, "Commodity Type")
-        || this.findValue(text, "Commodity");
+    const cleaned = text.replace(/[©®]/g, ":");
+
+    const m = cleaned.match(/Commodity(?:\s*Type)?\s*:\s*([A-Za-z]+)/i);
+    return m?.[1]?.trim() ?? "";
   }
 
   private findMandiCode(text: string): string {
@@ -162,15 +165,15 @@ export class TesseractDocumentParser implements DocumentParser {
   }
 
   private findWeight(text: string, type: "gross" | "tare" | "net"): string {
-    const label =
-      type === "gross"
-        ? "Gross Weight"
-        : type === "tare"
-        ? "Tare Weight"
-        : "Net Weight";
+    const cleaned = text.replace(/[©®]/g, ":");
 
-    const value = this.findValue(text, label);
-    return value.replace(/[^\d]/g, "");
+    const regex = new RegExp(
+      `${type}\\s*Weight\\s*:\\s*([\\d,]+)`,
+      "i"
+    );
+
+    const m = cleaned.match(regex);
+    return m ? m[1].replace(/,/g, "") : "";
   }
 
   private findOperatorId(text: string): string {
